@@ -554,7 +554,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div>
                     <h1>🎰 Vinlotteri</h1>
-                    <p class="subtitle">Trekk ukens heldig vinnere! </p>
+                    <p class="subtitle">Trekk ukens heldig! </p>
                 </div>
                 <a href="README.md" target="_blank" title="Åpne brukerveiledning" style="
                     background: var(--ffe-farge-vann);
@@ -743,6 +743,9 @@
             });
             return wheel;
         }
+
+        // Load history from localStorage
+        function loadHistory() {
             const stored = localStorage.getItem(STORAGE_HISTORY);
             return stored ? JSON.parse(stored) : [];
         }
