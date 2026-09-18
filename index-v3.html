@@ -778,30 +778,40 @@
                 return;
             }
 
+            console.log('File selected:', file.name, 'Size:', file.size);
+            
+            // Check if XLSX is loaded BEFORE reading
+            if (typeof XLSX === 'undefined') {
+                showMessage('drawMessage', '⚠️ Excel-biblioteket lastes ennå. Vent 2-3 sekunder og prøv igjen.', 'error');
+                console.error('XLSX library not loaded');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
+                    console.log('File loaded, size:', e.target.result.byteLength);
                     const data = new Uint8Array(e.target.result);
                     
-                    // Check if XLSX is loaded
-                    if (typeof XLSX === 'undefined') {
-                        showMessage('drawMessage', 'Excel-biblioteket lastes. Prøv igjen.', 'error');
-                        return;
-                    }
-                    
                     const workbook = XLSX.read(data, { type: 'array' });
+                    console.log('Workbook read, sheets:', workbook.SheetNames);
+                    
                     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    console.log('JSON rows:', json.length);
+                    console.log('First row:', json[0]);
 
                     if (!json || json.length === 0) {
-                        showMessage('drawMessage', 'Excel-filen er tom eller har ikke riktig format', 'error');
+                        showMessage('drawMessage', '❌ Excel-filen er tom eller har ikke riktig format', 'error');
                         return;
                     }
 
                     participants = [];
                     let imported = 0;
+                    let errors = [];
                     
-                    json.forEach(row => {
+                    json.forEach((row, idx) => {
                         // Try different column name variations
                         const name = row['Navn'] || row['NAVN'] || row['navn'] || 
                                     row['Name'] || row['NAME'] || row['name'] || '';
@@ -818,26 +828,37 @@
                                 tickets: tickets
                             });
                             imported++;
+                            console.log(`Row ${idx}: ${name} - ${tickets} lodd`);
+                        } else {
+                            errors.push(`Row ${idx+2}: name='${name}', tickets='${ticketsRaw}'`);
                         }
                     });
 
+                    console.log('Imported:', imported, 'Errors:', errors);
+
                     if (imported === 0) {
-                        showMessage('drawMessage', 'Ingen gyldige deltakere funnet i Excel-filen', 'error');
+                        showMessage('drawMessage', '❌ Ingen gyldige deltakere funnet. Sjekk at Excel har kolonnene: Navn, Antall lodd', 'error');
+                        console.error('Errors:', errors);
                         return;
                     }
 
                     saveParticipants();
                     loadParticipants();
                     document.getElementById('excelFile').value = '';
-                    showMessage('drawMessage', `✓ Importert ${imported} deltaker(e)!`, 'success');
+                    showMessage('drawMessage', `✅ Importert ${imported} deltaker(e)!`, 'success');
+                    
                 } catch (error) {
                     console.error('Excel import error:', error);
-                    showMessage('drawMessage', 'Feil ved lesing av Excel-fil. Sjekk format (må ha kolonnene: Navn, E-post, Antall lodd)', 'error');
+                    showMessage('drawMessage', `❌ Feil: ${error.message}`, 'error');
                 }
             };
+            
             reader.onerror = function() {
-                showMessage('drawMessage', 'Feil ved lesing av fil', 'error');
+                console.error('FileReader error');
+                showMessage('drawMessage', '❌ Feil ved lesing av fil', 'error');
             };
+            
+            console.log('Reading file...');
             reader.readAsArrayBuffer(file);
         }
 
