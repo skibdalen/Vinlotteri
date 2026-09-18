@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpareBank 1 Lotteri</title>
+    
+    <!-- Better Excel handling -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@latest/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@latest/dist/FileSaver.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --ffe-farge-fjell: #002776;
+            --ffe-farge-vann: #005aa4;
+            --ffe-farge-sand: #f8e9dd;
+            --ffe-farge-skog: #00754e;
+            --ffe-farge-baer: #db3335;
+            --ffe-farge-sol: #dc8000;
+            --ffe-farge-koksgraa: #323232;
+            --ffe-color-background-page: #f4f7fa;
+            --radius-md: 4px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background: var(--ffe-color-background-page);
+            color: var(--ffe-farge-koksgraa);
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: var(--ffe-farge-fjell);
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+            color: var(--ffe-farge-fjell);
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: var(--ffe-farge-koksgraa);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d5dd;
+            border-radius: var(--radius-md);
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 14px;
+            transition: border-color 200ms ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--ffe-farge-vann);
+            box-shadow: 0 0 0 3px rgba(0, 90, 164, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button {
+            background: var(--ffe-farge-vann);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 200ms ease;
+            font-family: 'Source Sans 3', sans-serif;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .button:hover:not(:disabled) {
+            background: #00437a;
+        }
+
+        .button.secondary {
+            background: white;
+            color: var(--ffe-farge-vann);
+            border: 1px solid var(--ffe-farge-vann);
+        }
+
+        .button.secondary:hover:not(:disabled) {
+            background: #f8fafc;
+        }
+
+        .button.primary {
+            background: var(--ffe-farge-fjell);
+        }
+
+        .button.primary:hover:not(:disabled) {
+            background: #001a47;
+        }
+
+        .button.success {
+            background: var(--ffe-farge-skog);
+            color: white;
+        }
+
+        .button.success:hover:not(:disabled) {
+            background: #005a3a;
+        }
+
+        .button.danger {
+            background: var(--ffe-farge-baer);
+        }
+
+        .button.danger:hover:not(:disabled) {
+            background: #b82b2d;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .participants-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .participant-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .participant-item.disabled {
+            opacity: 0.6;
+            background: #f0f0f0;
+        }
+
+        .participant-name {
+            font-weight: 600;
+            color: var(--ffe-farge-fjell);
+        }
+
+        .participant-probability {
+            text-align: center;
+            min-width: 60px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            background: var(--ffe-farge-sand);
+            font-weight: 600;
+            display: none; /* Skjult fra visning, men beregnet i koden */
+        }
+
+        .participant-tickets {
+            background: var(--ffe-farge-sand);
+            color: var(--ffe-farge-fjell);
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .wheel-container {
+            text-align: center;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--ffe-farge-fjell);
+            z-index: 10;
+        }
+
+        /* Slot Machine Styles */
+        .machine-container {
+            text-align: center;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .machine-display {
+            background: linear-gradient(135deg, #001a47 0%, #002776 100%);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
+            border: 3px solid #FFD700;
+        }
+
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            perspective: 1000px;
+        }
+
+        .slot-column {
+            width: 120px;
+            height: 300px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 2px solid #ddd;
+            position: relative;
+        }
+
+        .slot-column::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 80px;
+            transform: translateY(-50%);
+            border-top: 3px solid var(--ffe-farge-vann);
+            border-bottom: 3px solid var(--ffe-farge-vann);
+            background: rgba(0, 90, 164, 0.05);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .slot-items {
+            display: flex;
+            flex-direction: column;
+            padding: 100px 0;
+            transition: transform 0.1s linear;
+        }
+
+        .slot-item {
+            flex-shrink: 0;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--ffe-farge-koksgraa);
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 0 8px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .controls input {
+            width: 100px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .control-buttons .button {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .draw-status {
+            background: #f0f4f8;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .draw-status-text {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .draw-progress {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--ffe-farge-vann);
+        }
+
+        .winners-section {
+            background: var(--ffe-farge-skog);
+            color: white;
+            padding: 24px;
+            border-radius: var(--radius-md);
+            margin-top: 30px;
+        }
+
+        .winners-section h3 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .winner-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .winner-position {
+            font-weight: 700;
+            font-size: 18px;
+            min-width: 40px;
+        }
+
+        .winner-info {
+            text-align: left;
+            flex: 1;
+            margin-left: 16px;
+        }
+
+        .winner-name {
+            font-weight: 600;
+        }
+
+        .winner-email {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .empty-state {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error {
+            color: var(--ffe-farge-baer);
+            background: #fff5f5;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin: 12px 0;
+            border-left: 4px solid var(--ffe-farge-baer);
+        }
+
+        .success {
+            color: var(--ffe-farge-skog);
+            background: #f0fdf4;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin: 12px 0;
+            border-left: 4px solid var(--ffe-farge-skog);
+        }
+
+        .info {
+            color: var(--ffe-farge-vann);
+            background: #f0f7ff;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin: 12px 0;
+            border-left: 4px solid var(--ffe-farge-vann);
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d0d5dd;
+            background: white;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            color: var(--ffe-farge-koksgraa);
+            transition: all 200ms ease;
+        }
+
+        .tab-button.active {
+            background: var(--ffe-farge-vann);
+            color: white;
+            border-color: var(--ffe-farge-vann);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .history-entry {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            border-left: 4px solid var(--ffe-farge-vann);
+        }
+
+        .history-date {
+            font-weight: 600;
+            color: var(--ffe-farge-fjell);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .history-winners {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .stat-item {
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-name {
+            font-weight: 600;
+            color: var(--ffe-farge-fjell);
+        }
+
+        .stat-wins {
+            background: var(--ffe-farge-sand);
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-weight: 700;
+            color: var(--ffe-farge-fjell);
+        }
+
+        .message {
+            margin: 16px 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 90, 164, 0.1);
+            border-top: 3px solid var(--ffe-farge-vann);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <h1>🎰 SpareBank 1 Lotteri</h1>
+                    <p class="subtitle">Trekk vinnerne en og en med animert lotterihjul</p>
+                </div>
+                <a href="README.md" target="_blank" title="Åpne brukerveiledning" style="
+                    background: var(--ffe-farge-vann);
+                    color: white;
+                    border: none;
+                    border-radius: 50%;
+                    width: 48px;
+                    height: 48px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    cursor: pointer;
+                    text-decoration: none;
+                    transition: background 0.2s;
+                    flex-shrink: 0;
+                    margin-left: 20px;
+                " onmouseover="this.style.background='#004080'" onmouseout="this.style.background='var(--ffe-farge-vann)'">
+                    ?
+                </a>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Venstre: Deltaker-håndtering -->
+            <div class="card">
+                <h2>Deltakere</h2>
+                
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="switchTab('add-manual', event)">Legg til</button>
+                    <button class="tab-button" onclick="switchTab('import-excel', event)">Importer</button>
+                </div>
+
+                <div id="add-manual" class="tab-content active">
+                    <div class="form-group">
+                        <label for="name">Navn *</label>
+                        <input type="text" id="name" placeholder="Navn på deltaker">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">E-post</label>
+                        <input type="email" id="email" placeholder="epost@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="tickets">Antall lodd *</label>
+                        <input type="number" id="tickets" min="1" value="1">
+                    </div>
+                    <button class="button primary" onclick="addParticipant()">Legg til deltaker</button>
+                </div>
+
+                <div id="import-excel" class="tab-content">
+                    <div class="form-group">
+                        <label for="excelFile">Last opp Excel-fil</label>
+                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <button class="button secondary" onclick="importExcel()">Importer fra fil</button>
+                    <p style="margin-top: 12px; font-size: 12px; color: #666;">
+                        Excel-fil må ha kolonnene: Navn, E-post, Antall lodd
+                    </p>
+                </div>
+
+                <h3 style="margin-top: 24px; margin-bottom: 12px;">Nåværende deltakere</h3>
+                <div class="participants-list" id="participantsList">
+                    <p class="empty-state">Ingen deltakere ennå</p>
+                </div>
+
+                <button class="button secondary" style="margin-top: 16px;" onclick="clearAllParticipants()">Slett alle</button>
+                <button class="button secondary" style="margin-top: 8px;" onclick="exportParticipants()">📥 Eksport deltakere</button>
+            </div>
+
+            <!-- Senter: Lotterihjul -->
+            <div class="card">
+                <h2>Lotterimaskin</h2>
+                <div class="machine-container">
+                    <div class="machine-display">
+                        <div class="slot-machine">
+                            <div class="slot-column" id="slotColumn">
+                                <!-- Fylles dynamisk -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <input type="number" id="numDraws" min="1" value="1" placeholder="Ant. gevinster">
+                </div>
+
+                <div id="drawMessage" class="message"></div>
+
+                <div class="draw-status" id="drawStatus" style="display: none;">
+                    <div class="draw-status-text">Trekningsstatus</div>
+                    <div class="draw-progress"><span id="drawProgress">0</span> / <span id="drawTotal">1</span></div>
+                </div>
+
+                <div class="control-buttons" id="controlButtonsReady">
+                    <button class="button primary" onclick="startDraw()">Start trekningssesjon</button>
+                </div>
+
+                <div class="control-buttons" id="controlButtonsActive" style="display: none;">
+                    <button class="button primary" onclick="drawNextWinner()">Trekk neste vinner</button>
+                    <button class="button secondary" onclick="cancelDraw()">Avbryt</button>
+                </div>
+
+                <div class="control-buttons" id="controlButtonsComplete" style="display: none;">
+                    <button class="button success" onclick="saveDraw()">💾 Lagre vinnere</button>
+                    <button class="button secondary" onclick="startNewDraw()">Ny trekningssesjon</button>
+                </div>
+            </div>
+
+            <!-- Høyre: Vinnerliste -->
+            <div class="card">
+                <h2>Vinnere</h2>
+                <div id="winnersList" style="min-height: 400px;">
+                    <p class="empty-state">Ingen vinnere ennå</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historikk -->
+        <div class="card">
+            <h2>Trekkings-historikk</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('history-list', event)">Historikk</button>
+                <button class="tab-button" onclick="switchTab('history-stats', event)">Statistikk</button>
+            </div>
+
+            <div id="history-list" class="tab-content active">
+                <div id="historyContainer" style="max-height: 600px; overflow-y: auto;">
+                    <p class="empty-state">Ingen trekninger lagret ennå</p>
+                </div>
+                <button class="button secondary" style="margin-top: 16px; width: 100%;" onclick="downloadHistory()">
+                    📥 Last ned historikk (Excel)
+                </button>
+                <button class="button secondary" style="margin-top: 8px; width: 100%;" onclick="importHistory()">
+                    📤 Importer historikk (Excel)
+                </button>
+                <button class="button secondary" style="margin-top: 8px; width: 100%; color: #db3335; border-color: #db3335;" onclick="clearAllHistory()">
+                    🗑️ Slett all historikk
+                </button>
+            </div>
+
+            <div id="history-stats" class="tab-content">
+                <div id="historyStatsContainer" style="max-height: 600px; overflow-y: auto;">
+                    <p class="empty-state">Ingen data ennå</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================
+        // DATA MANAGEMENT
+        // ========================
+
+        let participants = [];
+        let currentDrawSession = null;
+        let currentShuffledWheel = [];  // Lagre den blandede rekkefølgen
+
+        // LocalStorage keys
+        const STORAGE_PARTICIPANTS = 'lottery_participants';
+        const STORAGE_HISTORY = 'lottery_history';
+
+        // Load participants from localStorage
+        function loadParticipants() {
+            const stored = localStorage.getItem(STORAGE_PARTICIPANTS);
+            participants = stored ? JSON.parse(stored) : [];
+            renderParticipants();
+            initSlotMachine();
+        }
+
+        // Save participants to localStorage
+        function saveParticipants() {
+            localStorage.setItem(STORAGE_PARTICIPANTS, JSON.stringify(participants));
+        }
+
+        // Load history from localStorage
+        function loadHistory() {
+            const stored = localStorage.getItem(STORAGE_HISTORY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        // Save history to localStorage
+        function saveHistory(history) {
+            localStorage.setItem(STORAGE_HISTORY, JSON.stringify(history));
+        }
+
+        // ========================
+        // PARTICIPANT MANAGEMENT
+        // ========================
+
+        function addParticipant() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const tickets = parseInt(document.getElementById('tickets').value) || 1;
+
+            if (!name) {
+                showMessage('drawMessage', 'Skriv inn navn på deltaker', 'error');
+                return;
+            }
+
+            if (tickets < 1) {
+                showMessage('drawMessage', 'Antall lodd må være minst 1', 'error');
+                return;
+            }
+
+            participants.push({ name, email, tickets });
+            saveParticipants();
+            
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('tickets').value = '1';
+            
+            loadParticipants();
+            showMessage('drawMessage', '✓ Deltaker lagt til!', 'success');
+        }
+
+        function importExcel() {
+            const file = document.getElementById('excelFile').files[0];
+            if (!file) {
+                showMessage('drawMessage', 'Velg en fil først', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    
+                    // Check if XLSX is loaded
+                    if (typeof XLSX === 'undefined') {
+                        showMessage('drawMessage', 'Excel-biblioteket lastes. Prøv igjen.', 'error');
+                        return;
+                    }
+                    
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (!json || json.length === 0) {
+                        showMessage('drawMessage', 'Excel-filen er tom eller har ikke riktig format', 'error');
+                        return;
+                    }
+
+                    participants = [];
+                    let imported = 0;
+                    
+                    json.forEach(row => {
+                        // Try different column name variations
+                        const name = row['Navn'] || row['NAVN'] || row['navn'] || 
+                                    row['Name'] || row['NAME'] || row['name'] || '';
+                        const email = row['E-post'] || row['E-POST'] || row['e-post'] || 
+                                     row['Email'] || row['EMAIL'] || row['email'] || '';
+                        const ticketsRaw = row['Antall lodd'] || row['ANTALL LODD'] || row['antall lodd'] ||
+                                          row['Tickets'] || row['TICKETS'] || row['tickets'] || '1';
+                        const tickets = parseInt(ticketsRaw) || 1;
+
+                        if (name && tickets > 0) {
+                            participants.push({ 
+                                name: String(name).trim(), 
+                                email: String(email).trim(), 
+                                tickets: tickets
+                            });
+                            imported++;
+                        }
+                    });
+
+                    if (imported === 0) {
+                        showMessage('drawMessage', 'Ingen gyldige deltakere funnet i Excel-filen', 'error');
+                        return;
+                    }
+
+                    saveParticipants();
+                    loadParticipants();
+                    document.getElementById('excelFile').value = '';
+                    showMessage('drawMessage', `✓ Importert ${imported} deltaker(e)!`, 'success');
+                } catch (error) {
+                    console.error('Excel import error:', error);
+                    showMessage('drawMessage', 'Feil ved lesing av Excel-fil. Sjekk format (må ha kolonnene: Navn, E-post, Antall lodd)', 'error');
+                }
+            };
+            reader.onerror = function() {
+                showMessage('drawMessage', 'Feil ved lesing av fil', 'error');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportParticipants() {
+            if (participants.length === 0) {
+                showMessage('drawMessage', 'Ingen deltakere å eksportere', 'error');
+                return;
+            }
+
+            try {
+                if (typeof XLSX === 'undefined') {
+                    showMessage('drawMessage', 'Excel-biblioteket lastes. Prøv igjen.', 'error');
+                    return;
+                }
+
+                const data = participants.map(p => ({
+                    'Navn': p.name,
+                    'E-post': p.email,
+                    'Antall lodd': p.tickets
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Deltakere');
+                XLSX.writeFile(wb, 'lotteri_deltakere.xlsx');
+                showMessage('drawMessage', '✓ Deltakere eksportert!', 'success');
+            } catch (error) {
+                console.error('Export error:', error);
+                showMessage('drawMessage', 'Feil ved eksport: ' + error.message, 'error');
+            }
+        }
+
+        // Beregn vinnersjanse for en deltaker i %
+        function calculateWinProbability(participantName) {
+            // Hvis ikke i draw session, bruker hele wheel
+            if (!currentDrawSession) {
+                const wheel = createLotteryWheel();
+                const count = wheel.filter(w => w.name === participantName).length;
+                const total = wheel.length;
+                if (total === 0) return "0.0";
+                return ((count / total) * 100).toFixed(1);
+            }
+            
+            // I draw session: sjekk om personen har vunnet 2 ganger
+            const winCount = currentDrawSession.winners.filter(w => w.name === participantName).length;
+            if (winCount >= 2) {
+                return "0.0"; // Utestengt
+            }
+            
+            // Beregn arbeidswheel: alle lodd minus de som er utestengt
+            let workingWheel = currentDrawSession.availableWheel.slice();
+            
+            // Fjern lodd for alle som har vunnet 2 ganger
+            const winCounts = {};
+            currentDrawSession.winners.forEach(winner => {
+                if (!winCounts[winner.name]) {
+                    winCounts[winner.name] = 0;
+                }
+                winCounts[winner.name]++;
+            });
+            
+            Object.keys(winCounts).forEach(name => {
+                if (winCounts[name] >= 2) {
+                    workingWheel = workingWheel.filter(w => w.name !== name);
+                }
+            });
+            
+            // Beregn sannsynlighet basert på arbeidswheel
+            const count = workingWheel.filter(w => w.name === participantName).length;
+            const total = workingWheel.length;
+            
+            if (total === 0) return "0.0";
+            return ((count / total) * 100).toFixed(1);
+        }
+
+        function renderParticipants() {
+            const list = document.getElementById('participantsList');
+            
+            if (participants.length === 0) {
+                list.innerHTML = '<p class="empty-state">Ingen deltakere ennå</p>';
+                return;
+            }
+
+            list.innerHTML = participants.map((p, i) => {
+                const probability = calculateWinProbability(p.name);
+                const winCount = currentDrawSession ? currentDrawSession.winners.filter(w => w.name === p.name).length : 0;
+                const isDisqualified = winCount >= 2;
+                
+                return `
+                    <div class="participant-item${isDisqualified ? ' disabled' : ''}">
+                        <div>
+                            <div class="participant-name">${escapeHtml(p.name)}</div>
+                            <div style="font-size: 12px; color: #666;">${escapeHtml(p.email || 'Ingen e-post')}</div>
+                        </div>
+                        <div class="participant-probability">
+                            <div style="font-weight: 600; font-size: 16px; color: var(--ffe-farge-fjell);">${probability}%</div>
+                            ${isDisqualified ? '<div style="font-size: 11px; color: #999;">Utestengt</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearAllParticipants() {
+            if (confirm('Slett alle deltakere?')) {
+                participants = [];
+                saveParticipants();
+                loadParticipants();
+                showMessage('drawMessage', '✓ Alle deltakere slettet', 'success');
+            }
+        }
+
+        // ========================
+        // LOTTERY MECHANICS
+        // ========================
+
+
+
+        // ========================
+        // SLOT MACHINE
+        // ========================
+
+        function initSlotMachine() {
+            const slotColumn = document.getElementById('slotColumn');
+            
+            if (slotColumn) {
+                const itemsDiv = document.createElement('div');
+                itemsDiv.className = 'slot-items';
+                
+                // Opprett fargeelektroder for spinning
+                const colors = ['#005aa4', '#002776', '#00754e', '#f8e9dd', '#dc8000', '#db3335', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'];
+                
+                // Gjenta farger flere ganger for spinning-effekt
+                for (let repeat = 0; repeat < 5; repeat++) {
+                    colors.forEach(color => {
+                        const item = document.createElement('div');
+                        item.className = 'slot-item';
+                        item.style.backgroundColor = color;
+                        item.innerHTML = '';
+                        itemsDiv.appendChild(item);
+                    });
+                }
+                
+                slotColumn.innerHTML = '';
+                slotColumn.appendChild(itemsDiv);
+            }
+        }
+
+        function spinSlotMachine(winnerParticipantIndex, callback) {
+            // Trekk en tilfeldig posisjon for visuell effekt
+            const colors = ['#005aa4', '#002776', '#00754e', '#f8e9dd', '#dc8000', '#db3335', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'];
+            const slotColumn = document.getElementById('slotColumn');
+            const itemsDiv = slotColumn.querySelector('.slot-items');
+            
+            // Lag fargekolonne hvis den ikke finnes
+            if (!itemsDiv || itemsDiv.children.length === 0) {
+                initSlotMachine();
+            }
+            
+            const winnerName = participants[winnerParticipantIndex].name;
+            
+            // Velg en tilfeldig sluttposisjon for farger
+            const totalColors = colors.length * 5; // 5 repetinger
+            const randomStopIndex = Math.floor(Math.random() * colors.length) + colors.length * 2; // 2-3 repetinger inn
+            
+            const itemHeight = 80;
+            const selectedItemCenter = (randomStopIndex + 0.5) * itemHeight;
+            const targetScroll = selectedItemCenter - 150;
+            
+            // Disable button
+            const btn = document.querySelector('#controlButtonsActive .button.primary');
+            if (btn) btn.disabled = true;
+            
+            // Animate spin
+            const duration = 2000;
+            const startTime = Date.now();
+            let currentScroll = 0;
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing: start fast, slow down
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                // Add extra rotation at beginning for visual effect
+                const extraRotation = Math.max(0, (1 - progress) * 2000);
+                currentScroll = targetScroll + extraRotation;
+                
+                itemsDiv.style.transform = `translateY(-${currentScroll}px)`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Animation complete - show only winner name
+                    showWinnerInSlotMachine(winnerName);
+                    
+                    // Re-enable button and call callback
+                    if (btn) btn.disabled = false;
+                    if (callback) callback();
+                }
+            }
+            
+            animate();
+        }
+
+        function showWinnerInSlotMachine(winnerName) {
+            const slotColumn = document.getElementById('slotColumn');
+            const itemsDiv = slotColumn.querySelector('.slot-items');
+            
+            // Erstatt innholdet med bare vinnernavn
+            itemsDiv.innerHTML = '';
+            itemsDiv.style.transform = 'translateY(0)';
+            
+            // Lag et enkelt element med vinnernavn
+            const winnerItem = document.createElement('div');
+            winnerItem.className = 'slot-item';
+            winnerItem.style.cssText = `
+                height: 80px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                font-weight: 700;
+                color: white;
+                background: var(--ffe-farge-fjell);
+            `;
+            winnerItem.textContent = escapeHtml(winnerName);
+            
+            itemsDiv.appendChild(winnerItem);
+        }
+
+        // ========================
+        // DRAW SESSION (TREKNING)
+        // ========================
+
+        function startDraw() {
+            const numDraws = parseInt(document.getElementById('numDraws').value) || 1;
+            
+            if (participants.length === 0) {
+                showMessage('drawMessage', 'Legg til minst en deltaker', 'error');
+                return;
+            }
+
+            const wheel = createLotteryWheel();
+
+            if (wheel.length < numDraws) {
+                showMessage('drawMessage', `Ikke nok lodd. Totalt ${wheel.length} lodd, men prøvde å trekke ${numDraws}.`, 'error');
+                return;
+            }
+
+            currentDrawSession = {
+                targetDraws: numDraws,
+                drawsCompleted: 0,
+                winners: [],
+                availableWheel: wheel.slice()
+            };
+
+            initSlotMachine();
+            updateDrawUI();
+            showMessage('drawMessage', `✓ Trekningssesjon startet. Totalt ${numDraws} gevinst(er) å trekke.`, 'info');
+        }
+
+        function drawNextWinner() {
+            if (!currentDrawSession || currentDrawSession.drawsCompleted >= currentDrawSession.targetDraws) {
+                return;
+            }
+
+            // Sjekk hvilke personer som har vunnet 2 ganger og fjern deres lodd
+            const winCounts = {};
+            currentDrawSession.winners.forEach(winnerRecord => {
+                if (!winCounts[winnerRecord.name]) {
+                    winCounts[winnerRecord.name] = 0;
+                }
+                winCounts[winnerRecord.name]++;
+            });
+
+            // Start med alle tilgjengelige lodd
+            let workingWheel = currentDrawSession.availableWheel.slice();
+            
+            // Fjern ALLE lodd for personer som har vunnet 2 ganger
+            Object.keys(winCounts).forEach(name => {
+                if (winCounts[name] >= 2) {
+                    workingWheel = workingWheel.filter(w => w.name !== name);
+                }
+            });
+
+            if (workingWheel.length === 0) {
+                showMessage('drawMessage', 'Ikke nok deltakere for flere trekninger', 'error');
+                return;
+            }
+
+            // Draw random index - hver lodd har lik sjanse
+            const idx = Math.floor(Math.random() * workingWheel.length);
+            const winner = workingWheel[idx];
+            
+            // Find which participant index this winner is
+            const winnerParticipantIndex = participants.findIndex(p => p.name === winner.name);
+
+            // Initialize farger før spinning
+            initSlotMachine();
+
+            // Animate slot machine to show this winner
+            spinSlotMachine(winnerParticipantIndex, () => {
+                // Only add winner AFTER animation is complete
+                currentDrawSession.drawsCompleted++;
+                currentDrawSession.winners.push({
+                    position: currentDrawSession.drawsCompleted,
+                    name: winner.name,
+                    email: winner.email,
+                    tickets: participants.find(p => p.name === winner.name)?.tickets || 1
+                });
+
+                // Fjern ETT lodd for vinneren (reduserer sjansen deres neste trekning)
+                let removed = false;
+                currentDrawSession.availableWheel = currentDrawSession.availableWheel.filter(w => {
+                    if (!removed && w.name === winner.name) {
+                        removed = true;  // Fjern bare første forekomst
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Update UI
+                updateDrawStatus();
+
+                if (currentDrawSession.drawsCompleted >= currentDrawSession.targetDraws) {
+                    updateDrawUI('complete');
+                    showMessage('drawMessage', `✅ Alle ${currentDrawSession.targetDraws} gevinst(er) trukket!`, 'success');
+                }
+            });
+        }
+
+        function updateDrawStatus() {
+            document.getElementById('drawProgress').textContent = currentDrawSession.drawsCompleted;
+            document.getElementById('drawTotal').textContent = currentDrawSession.targetDraws;
+            renderParticipants();  // Oppdater sannsynligheter
+            renderWinners();
+        }
+
+        function renderWinners() {
+            const list = document.getElementById('winnersList');
+            
+            if (!currentDrawSession || currentDrawSession.winners.length === 0) {
+                list.innerHTML = '<p class="empty-state">Ingen vinnere</p>';
+                return;
+            }
+
+            list.innerHTML = '<div class="winners-section"><h3>🎉 Aktuelle vinnere:</h3>' +
+                currentDrawSession.winners.map(w => `
+                    <div class="winner-item">
+                        <span class="winner-position">Pris ${w.position}</span>
+                        <div class="winner-info">
+                            <div class="winner-name">${escapeHtml(w.name)}</div>
+                            <div class="winner-email">${escapeHtml(w.email || 'Ingen e-post')}</div>
+                        </div>
+                    </div>
+                `).join('') + '</div>';
+        }
+
+        function updateDrawUI(state = 'active') {
+            const statusEl = document.getElementById('drawStatus');
+            const readyBtns = document.getElementById('controlButtonsReady');
+            const activeBtns = document.getElementById('controlButtonsActive');
+            const completeBtns = document.getElementById('controlButtonsComplete');
+
+            if (state === 'active') {
+                statusEl.style.display = 'block';
+                readyBtns.style.display = 'none';
+                activeBtns.style.display = 'flex';
+                completeBtns.style.display = 'none';
+            } else if (state === 'complete') {
+                statusEl.style.display = 'block';
+                readyBtns.style.display = 'none';
+                activeBtns.style.display = 'none';
+                completeBtns.style.display = 'flex';
+            } else {
+                statusEl.style.display = 'none';
+                readyBtns.style.display = 'flex';
+                activeBtns.style.display = 'none';
+                completeBtns.style.display = 'none';
+                initSlotMachine();
+            }
+        }
+
+        function cancelDraw() {
+            if (confirm('Avbryt trekningssesjon? Vinnere vil ikke bli lagret.')) {
+                currentDrawSession = null;
+                updateDrawUI('idle');
+                document.getElementById('winnersList').innerHTML = '<p class="empty-state">Ingen vinnere</p>';
+                showMessage('drawMessage', 'Trekningssesjon avbrutt', 'info');
+            }
+        }
+
+        function saveDraw() {
+            if (!currentDrawSession || currentDrawSession.winners.length === 0) {
+                showMessage('drawMessage', 'Ingen vinnere å lagre', 'error');
+                return;
+            }
+
+            const history = loadHistory();
+            history.push({
+                date: new Date().toLocaleString('nb-NO'),
+                drawId: new Date().getTime(),
+                winners: currentDrawSession.winners
+            });
+
+            saveHistory(history);
+            
+            currentDrawSession = null;
+            updateDrawUI('idle');
+            document.getElementById('winnersList').innerHTML = '<p class="empty-state">Ingen vinnere</p>';
+            loadHistory(); // Refresh history display
+            showMessage('drawMessage', `✅ Lagret ${history[history.length - 1].winners.length} vinner(e) til historikk`, 'success');
+        }
+
+        function startNewDraw() {
+            currentDrawSession = null;
+            updateDrawUI('idle');
+            document.getElementById('winnersList').innerHTML = '<p class="empty-state">Ingen vinnere</p>';
+            document.getElementById('drawMessage').innerHTML = '';
+        }
+
+        // ========================
+        // HISTORY & STATISTICS
+        // ========================
+
+        function renderHistory() {
+            const history = loadHistory();
+            const container = document.getElementById('historyContainer');
+            
+            if (history.length === 0) {
+                container.innerHTML = '<p class="empty-state">Ingen trekninger lagret ennå</p>';
+                return;
+            }
+
+            container.innerHTML = history.reverse().map(entry => `
+                <div class="history-entry">
+                    <div class="history-date">📅 ${escapeHtml(entry.date)}</div>
+                    <div class="history-winners">
+                        ${entry.winners.map((w, i) => `
+                            <div style="padding: 4px 0;">Pris ${i + 1}: <strong>${escapeHtml(w.name)}</strong> (${w.tickets} lodd)</div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistoryStats() {
+            const history = loadHistory();
+            const container = document.getElementById('historyStatsContainer');
+            
+            // Calculate stats
+            const stats = {};
+            history.forEach(entry => {
+                entry.winners.forEach(winner => {
+                    if (!stats[winner.name]) {
+                        stats[winner.name] = { wins: 0, emails: [] };
+                    }
+                    stats[winner.name].wins++;
+                    if (winner.email && !stats[winner.name].emails.includes(winner.email)) {
+                        stats[winner.name].emails.push(winner.email);
+                    }
+                });
+            });
+
+            if (Object.keys(stats).length === 0) {
+                container.innerHTML = '<p class="empty-state">Ingen statistikk ennå</p>';
+                return;
+            }
+
+            const sorted = Object.entries(stats).sort((a, b) => b[1].wins - a[1].wins);
+
+            container.innerHTML = sorted.map(([name, data]) => `
+                <div class="stat-item">
+                    <div>
+                        <div class="stat-name">${escapeHtml(name)}</div>
+                        <div style="font-size: 12px; color: #999;">${escapeHtml(data.emails.join(', ') || 'Ingen e-post')}</div>
+                    </div>
+                    <div class="stat-wins">${data.wins} gevinst(er)</div>
+                </div>
+            `).join('');
+        }
+
+        function downloadHistory() {
+            const history = loadHistory();
+            
+            if (history.length === 0) {
+                showMessage('drawMessage', 'Ingen historikk å laste ned', 'error');
+                return;
+            }
+
+            try {
+                if (typeof XLSX === 'undefined') {
+                    showMessage('drawMessage', 'Excel-biblioteket lastes. Prøv igjen.', 'error');
+                    return;
+                }
+
+                const data = [];
+                history.forEach(entry => {
+                    entry.winners.forEach((winner, idx) => {
+                        data.push({
+                            'Dato': entry.date,
+                            'Prisnummer': idx + 1,
+                            'Vinner': winner.name,
+                            'E-post': winner.email,
+                            'Antall lodd': winner.tickets
+                        });
+                    });
+                });
+
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Historikk');
+                XLSX.writeFile(wb, 'lotteri_historikk.xlsx');
+                showMessage('drawMessage', '✓ Historikk eksportert!', 'success');
+            } catch (error) {
+                console.error('History export error:', error);
+                showMessage('drawMessage', 'Feil ved eksport: ' + error.message, 'error');
+            }
+        }
+
+        // Import historikk fra Excel
+        function importHistory() {
+            // Sjekk at XLSX er lastet
+            if (typeof XLSX === 'undefined') {
+                showMessage('drawMessage', 'Excel-biblioteket lastes. Vennligst vent noen sekunder og prøv igjen.', 'error');
+                return;
+            }
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx,.xls,.csv';
+            input.style.display = 'none';
+            document.body.appendChild(input);
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                
+                reader.onerror = () => {
+                    showMessage('drawMessage', 'Feil ved lesing av fil', 'error');
+                    console.error('FileReader error');
+                };
+                
+                reader.onload = (event) => {
+                    try {
+                        console.log('Lesing Excel-fil:', file.name);
+                        const data = new Uint8Array(event.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        console.log('Workbook ark:', workbook.SheetNames);
+                        
+                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(worksheet);
+                        
+                        console.log('Leseste rader:', rows.length);
+                        
+                        if (!rows || rows.length === 0) {
+                            showMessage('drawMessage', 'Excel-fil er tom eller har feil format', 'error');
+                            return;
+                        }
+
+                        // Validér format
+                        const firstRow = rows[0];
+                        console.log('Første rad kolonner:', Object.keys(firstRow));
+                        
+                        if (!firstRow['Dato'] || !firstRow['Vinner']) {
+                            showMessage('drawMessage', 'Excel må ha "Dato" og "Vinner" kolonner. Fundne kolonner: ' + Object.keys(firstRow).join(', '), 'error');
+                            return;
+                        }
+
+                        // Grupér winners etter dato
+                        const sessionMap = {};
+                        rows.forEach(row => {
+                            const dato = String(row['Dato']).trim();
+                            if (!dato) return;
+                            
+                            if (!sessionMap[dato]) {
+                                sessionMap[dato] = {
+                                    date: dato,
+                                    drawId: new Date(dato).getTime(),
+                                    winners: []
+                                };
+                            }
+                            
+                            sessionMap[dato].winners.push({
+                                position: sessionMap[dato].winners.length + 1,
+                                name: String(row['Vinner']).trim(),
+                                email: String(row['E-post'] || '').trim(),
+                                tickets: parseInt(row['Antall lodd']) || 1
+                            });
+                        });
+
+                        const importedHistory = Object.values(sessionMap);
+                        console.log('Importert sesjonor:', importedHistory.length);
+
+                        // Spør om merge eller erstatte
+                        const currentHistory = loadHistory();
+                        if (currentHistory.length > 0) {
+                            const shouldMerge = confirm(
+                                `📊 Eksisterende historikk: ${currentHistory.length} sesjon(er)\n` +
+                                `📥 Importeres: ${importedHistory.length} sesjon(er)\n\n` +
+                                `Velg handling:\n` +
+                                `✓ OK = Slå sammen (legg til nye)\n` +
+                                `✗ Avbryt = Erstatt (slett gamle)`
+                            );
+                            
+                            if (shouldMerge) {
+                                const merged = [...currentHistory, ...importedHistory];
+                                saveHistory(merged);
+                                showMessage('drawMessage', `✅ ${importedHistory.length} nye sesjon(er) lagt til (${merged.length} totalt)`, 'success');
+                            } else {
+                                saveHistory(importedHistory);
+                                showMessage('drawMessage', `✅ ${importedHistory.length} sesjon(er) importert (gamle slettet)`, 'success');
+                            }
+                        } else {
+                            saveHistory(importedHistory);
+                            showMessage('drawMessage', `✅ ${importedHistory.length} sesjon(er) importert`, 'success');
+                        }
+                        
+                        loadHistory();
+                        
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        showMessage('drawMessage', 'Feil ved import: ' + error.message, 'error');
+                    }
+                };
+                
+                reader.readAsArrayBuffer(file);
+            };
+            
+            input.click();
+        }
+
+        // Slett all historikk
+        function clearAllHistory() {
+            try {
+                const history = loadHistory();
+                console.log('Historikk funnet:', history.length, 'sesjonor');
+                
+                if (!history || history.length === 0) {
+                    showMessage('drawMessage', 'Ingen historikk å slette', 'info');
+                    return;
+                }
+
+                const totalWinners = history.reduce((sum, s) => sum + (s.winners ? s.winners.length : 0), 0);
+                
+                const confirmed = confirm(
+                    `⚠️ ADVARSEL: Slett all historikk?\n\n` +
+                    `Antall sesjonor: ${history.length}\n` +
+                    `Totalt vinnere: ${totalWinners}\n\n` +
+                    `DETTE KAN IKKE ANGRES!\n\n` +
+                    `Klikk OK for å slette, eller Avbryt for å behold`
+                );
+
+                if (confirmed) {
+                    console.log('Sletter historikk...');
+                    localStorage.removeItem(STORAGE_HISTORY);
+                    console.log('Historikk slettet');
+                    showMessage('drawMessage', '✅ All historikk slettet', 'success');
+                    loadHistory(); // Refresh display
+                } else {
+                    console.log('Sletting avbrutt av bruker');
+                    showMessage('drawMessage', 'Sletting avbrutt', 'info');
+                }
+            } catch (error) {
+                console.error('Feil ved sletting:', error);
+                showMessage('drawMessage', 'Feil ved sletting: ' + error.message, 'error');
+            }
+        }
+
+        // ========================
+        // UI HELPERS
+        // ========================
+
+        function switchTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'history-list') renderHistory();
+            if (tabName === 'history-stats') renderHistoryStats();
+        }
+
+        function showMessage(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `<div class="${type}">${escapeHtml(message)}</div>`;
+            setTimeout(() => { 
+                if (el.innerHTML.includes(type)) el.innerHTML = ''; 
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========================
+        // INITIALIZATION
+        // ========================
+
+        function checkLibraries() {
+            const maxWait = 5000; // 5 seconds
+            const startTime = Date.now();
+            
+            const checkInterval = setInterval(() => {
+                if (typeof XLSX !== 'undefined') {
+                    clearInterval(checkInterval);
+                    console.log('✓ XLSX library loaded');
+                } else if (Date.now() - startTime > maxWait) {
+                    clearInterval(checkInterval);
+                    console.warn('⚠ XLSX library may not be available. Excel functions may not work.');
+                }
+            }, 100);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if libraries are available
+            checkLibraries();
+            
+            // Load data
+            loadParticipants();
+            renderHistory();
+            renderHistoryStats();
+        });
+    </script>
+</body>
+</html>
