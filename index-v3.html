@@ -723,6 +723,10 @@
             participants = stored ? JSON.parse(stored) : [];
             renderParticipants();
             initSlotMachine();
+            // Initialize quarterly stratified plan
+            if (participants.length > 0) {
+                initializeQuarterlyPlan();
+            }
         }
 
         // Save participants to localStorage
@@ -756,7 +760,80 @@
         }
 
         // ========================
-        // PARTICIPANT MANAGEMENT
+        // QUARTERLY STRATIFIED CONTROL
+        // Hidden stratified sampling for fair distribution over entire quarter
+        // ========================
+
+        let quarterlyPlan = null;  // Stratified plan for entire quarter
+        let sessionNumber = 0;     // Which session we're on
+        const TOTAL_SESSIONS = 13; // 13 weeks in quarter
+        const DRAWS_PER_SESSION = 10;
+        const TOTAL_QUARTERLY_DRAWS = TOTAL_SESSIONS * DRAWS_PER_SESSION; // 130 total
+
+        function createQuarterlyPlan() {
+            // Create a stratified plan for the entire quarter (130 draws)
+            const plan = [];
+            const remainders = [];
+            const totalTickets = participants.reduce((sum, p) => sum + p.tickets, 0);
+            
+            // Calculate exact wins and base wins for each participant
+            participants.forEach((p) => {
+                const exactWins = (p.tickets / totalTickets) * TOTAL_QUARTERLY_DRAWS;
+                const baseWins = Math.floor(exactWins);
+                const remainder = exactWins - baseWins;
+                
+                // Add base wins to plan
+                for (let i = 0; i < baseWins; i++) {
+                    plan.push({ name: p.name, email: p.email });
+                }
+                
+                // Store remainder if any
+                if (remainder > 0) {
+                    remainders.push({ name: p.name, email: p.email, remainder });
+                }
+            });
+            
+            // Sort remainders by size (Largest Remainder Method)
+            remainders.sort((a, b) => b.remainder - a.remainder);
+            
+            // Add remaining slots to those with highest remainders
+            const remaining = TOTAL_QUARTERLY_DRAWS - plan.length;
+            for (let i = 0; i < remaining; i++) {
+                plan.push({
+                    name: remainders[i].name,
+                    email: remainders[i].email
+                });
+            }
+            
+            // Shuffle the plan so it looks random when distributed
+            return shuffleArray(plan);
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function initializeQuarterlyPlan() {
+            if (!quarterlyPlan) {
+                quarterlyPlan = createQuarterlyPlan();
+                console.log('Quarterly stratified plan created for 130 draws');
+            }
+        }
+
+        function getExpectedWins(participantName) {
+            const participant = participants.find(p => p.name === participantName);
+            if (!participant) return 0;
+            const totalTickets = participants.reduce((sum, p) => sum + p.tickets, 0);
+            return ((participant.tickets / totalTickets) * TOTAL_QUARTERLY_DRAWS).toFixed(2);
+        }
+
+        // ========================
+        // PARTICIPANT MANAGEMENT (ORIGINAL)
         // ========================
 
         function addParticipant() {
@@ -1344,9 +1421,61 @@
                 return;
             }
 
+            // Initialize quarterly plan if not done
+            initializeQuarterlyPlan();
+
             const sorted = Object.entries(stats).sort((a, b) => b[1].wins - a[1].wins);
 
-            container.innerHTML = sorted.map(([name, data]) => `
+            // Create quarterly overview table
+            let quarterlyOverviewHtml = `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #002776; margin-bottom: 15px;">📊 KVARTALOVERSIKT - Forventet vs Faktisk</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #002776; color: white;">
+                                    <th style="padding: 8px; text-align: left;">Navn</th>
+                                    <th style="padding: 8px; text-align: center;">Lodd</th>
+                                    <th style="padding: 8px; text-align: center;">Faktisk</th>
+                                    <th style="padding: 8px; text-align: center;">Forventet</th>
+                                    <th style="padding: 8px; text-align: center;">Avvik</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            participants.forEach(p => {
+                const actualWins = stats[p.name]?.wins || 0;
+                const expectedWins = getExpectedWins(p.name);
+                const deviation = (actualWins - expectedWins).toFixed(2);
+                const deviationAbs = Math.abs(parseFloat(deviation));
+                const status = deviationAbs <= 1 ? '✅' : '⚠️';
+                
+                const bgColor = actualWins === 0 ? '#f9f9f9' : '#ffffff';
+                quarterlyOverviewHtml += `
+                    <tr style="border-bottom: 1px solid #ddd; background: ${bgColor};">
+                        <td style="padding: 8px; text-align: left;">${escapeHtml(p.name)}</td>
+                        <td style="padding: 8px; text-align: center;">${p.tickets}</td>
+                        <td style="padding: 8px; text-align: center; font-weight: bold;">${actualWins}</td>
+                        <td style="padding: 8px; text-align: center;">${expectedWins}</td>
+                        <td style="padding: 8px; text-align: center;">${deviation} ${status}</td>
+                    </tr>
+                `;
+            });
+
+            quarterlyOverviewHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <hr style="margin: 30px 0; border: 1px solid #ddd;">
+                
+                <div>
+                    <h3 style="color: #002776; margin-bottom: 15px;">📈 DETALJERT OVERSIKT</h3>
+            `;
+
+            quarterlyOverviewHtml += sorted.map(([name, data]) => `
                 <div class="stat-item">
                     <div>
                         <div class="stat-name">${escapeHtml(name)}</div>
@@ -1355,6 +1484,10 @@
                     <div class="stat-wins">${data.wins} gevinst(er)</div>
                 </div>
             `).join('');
+
+            quarterlyOverviewHtml += `</div>`;
+
+            container.innerHTML = quarterlyOverviewHtml;
         }
 
         function downloadHistory() {
