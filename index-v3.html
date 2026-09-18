@@ -730,8 +730,19 @@
             localStorage.setItem(STORAGE_PARTICIPANTS, JSON.stringify(participants));
         }
 
-        // Load history from localStorage
-        function loadHistory() {
+        // ========================
+        // LOTTERY WHEEL & DRAWING
+        // ========================
+
+        function createLotteryWheel() {
+            const wheel = [];
+            participants.forEach(p => {
+                for (let i = 0; i < p.tickets; i++) {
+                    wheel.push({ name: p.name, email: p.email });
+                }
+            });
+            return wheel;
+        }
             const stored = localStorage.getItem(STORAGE_HISTORY);
             return stored ? JSON.parse(stored) : [];
         }
